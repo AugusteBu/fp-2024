@@ -1,0 +1,12 @@
+<Art store> ::= <Writing utensils> <Books> <Art supplies>
+
+<Writing utensils> ::= <Pencils> <Brushes> <Pens> <Writing utensils>
+
+<Pens> ::= <Ballpoint pens> | <Fountain pens> | <Gel pens> 
+
+<Books> ::= <Mystery books> | <Fiction books> | <Poetry books>
+
+<Art supplies> ::= <Canvases> <Paints> <Sketchpads> <Notebooks> <Art supplies>
+
+<Paints> ::= <Oil paints> | <Watercolors> | <Acrylics>
+
