@@ -5,5 +5,5 @@ module Lib1
 -- | This function returns a list of words
 -- to be autocompleted in your program's repl.
 completions :: [String]
-completions = ["Art store", "Writing utensils", "Pencils", "Pens", "Brushes", "Books", "Mystery", "Fiction", "Poetry", "Art supplies", "Ballpoint", "Fountain", "Poetry", "Canvases", "Paint", "Notebooks", "Oil", "Watercolors", "Acrylics"]
+completions = ["Add" <Storage> <Item>, "Delete" <Storage> <Item>, "Restock" <Storage> <Item>, "Sell" <Item> | "Exit"]
 

@@ -1,12 +1,20 @@
-<Art store> ::= <Writing utensils> <Books> <Art supplies>
+<Art store> ::= <Storage> <Writing utensils> <Books> <Art supplies>
 
-<Writing utensils> ::= <Pencils> <Brushes> <Pens> <Writing utensils>
+<Item> = <Writing utensils> | <Books> | <Art supplies>
+
+<Programme> ::= "Add" <Storage> <Item> | "Delete" <Storage> <Item> | "Restock" <Storage> <Item> | "Sell" <Item> | "Exit"
+
+<Storage> ::= <Writing utensils> | <Storage> <Item>
+
+<Writing utensils> ::= <Pencils> | <Brushes> | <Pens>
 
 <Pens> ::= <Ballpoint pens> | <Fountain pens> | <Gel pens> 
 
-<Books> ::= <Mystery books> | <Fiction books> | <Poetry books>
+<Books> ::= <Mystery> | <Fiction> | <Poetry>
 
-<Art supplies> ::= <Canvases> <Paints> <Sketchpads> <Notebooks> <Art supplies>
+<Art supplies> ::= <Canvases> | <Paints> | <Sketchpads> | <Notebooks>
 
 <Paints> ::= <Oil paints> | <Watercolors> | <Acrylics>
+
+<Pencils> ::= <Graphite> | <Mechanical>
 
