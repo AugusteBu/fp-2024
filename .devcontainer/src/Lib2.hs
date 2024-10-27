@@ -157,7 +157,7 @@ orParser p1 p2 input =
         Right result -> Right result  
         Left _       -> p2 input      
 
--- wich category belong to
+-- Function to determine category
 parseWritingUtensil :: Parser1 String
 parseWritingUtensil input =
     if isWritingUtensil input
@@ -180,23 +180,27 @@ parseOtherItems :: Parser1 String
 parseOtherItems input =
     if isOtherItem input
     then Right input
-    else Left "Not an other item"
+    else Left "Not another item"
 
---determine category
+-- Determine category using orParser
 parseItem :: String -> Either String String
 parseItem input = orParser (orParser parseWritingUtensil (orParser parseBook parseArtSupply)) parseOtherItems input
 
---add 
+-- Define the state structure
+-- Function to add an item to the state
 add :: State -> String -> Int -> Either String State
 add currentState itemStr quantityInt =
-    if itemExists (writingUtensils currentState) itemStr || 
-       itemExists (books currentState) itemStr || 
-       itemExists (artSupplies currentState) itemStr || 
-       itemExists (otherItems currentState) itemStr 
-    then 
-        Left "Item already exists. Use restock to increase quantity."
-    else 
-        Right $ addToCategory currentState itemStr quantityInt
+    case parseItem itemStr of
+        Left err -> Left err  -- Return the parsing error
+        Right _ -> 
+            if itemExists (writingUtensils currentState) itemStr || 
+               itemExists (books currentState) itemStr || 
+               itemExists (artSupplies currentState) itemStr || 
+               itemExists (otherItems currentState) itemStr 
+            then 
+                Left "Item already exists. Use restock to increase quantity."
+            else 
+                Right $ addToCategory currentState itemStr quantityInt
 
 -- Add the item to the correct category
 addToCategory :: State -> String -> Int -> State
@@ -205,6 +209,7 @@ addToCategory currentState itemStr quantityInt
     | isBook itemStr           = currentState { books = addItem (books currentState) itemStr quantityInt }
     | isArtSupply itemStr      = currentState { artSupplies = addItem (artSupplies currentState) itemStr quantityInt }
     | otherwise                = currentState { otherItems = addItem (otherItems currentState) itemStr quantityInt }
+
 
 -- Function to add an item to the specified list
 addItem :: [(String, Int)] -> String -> Int -> [(String, Int)]
@@ -220,7 +225,7 @@ addItem currentItems itemStr quantityInt =
 
     in updatedItems 
 
---check item belong to specific category
+-- Check if an item belongs to a specific category
 isWritingUtensil :: String -> Bool
 isWritingUtensil itemStr = itemStr `elem` ["graphite", "mechanical", "ballpoint", "fountain", "gel"]
 
@@ -231,9 +236,9 @@ isArtSupply :: String -> Bool
 isArtSupply itemStr = itemStr `elem` ["brush", "canvases", "oil", "watercolors", "acrylics", "sketchpads", "notebooks"]
 
 isOtherItem :: String -> Bool
-isOtherItem itemStr = True  
+isOtherItem _ = True  -- Allow any other item
 
--- if item already exists
+-- If item already exists
 itemExists :: [(String, Int)] -> String -> Bool
 itemExists [] _ = False
 itemExists ((name, _) : rest) itemStr = name == itemStr || itemExists rest itemStr
