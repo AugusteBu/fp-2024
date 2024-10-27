@@ -1,3 +1,39 @@
+Sell graphite 100
+Check graphite
+Check fixative
+Delete fixative
+Check oil
+Delete oil
+Check oil
+Sell oil 3
+Check bookmark
+Check bookmarks
+Check fixative
+Check oil
+Check graphite 
+Restock graphite 45
+Restock oil 56
+Add bookmark 100
+Add fixative 5
+fes
+f
+e
+fe
+sdvf
+A iate 0Ad f 
+Check oil
+Check brush
+Delete brush
+Delete fiction
+Restock graphite 50
+restock graphite 50
+Restock oil 100
+Add fixative 100
+dd Pencil 10
+Check oil
+Exit
+Check oil
+Restock oil 4555
 f
 g
 f
@@ -62,39 +98,3 @@ Sell oil 1'
 Restock oil 6
 Check oil
 Sell oil 5
-Restock oil 100
-Sell oil 1
-Restock oil 5
-Check oil
-Sell oil 1
-Restock oil 100
-Exit
-Check oil
-Sell oil 1
-Restock oil 5
-Sell poop 1
-Sell oil 5
-Restock oil 1000
-Add poop 69
-Sell poop 1
-Sell oil 2
-Restock oil 10
-Add poop 69
-tack solver
-Sell graphite 1
-Sell poop 1
-Check graphite
-Restock graphite 10 
-Restock graphite 10 5
-Restock brush 5
-Delete brush 
-Add poop 69
-tack build --verbose
-Sell oil 2
-Restock oil 10
-Sell candy 5
-Check candy
-Add candy 10000
-Add poli
-tack clean --full
-tack build --verbose

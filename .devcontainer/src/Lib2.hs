@@ -18,7 +18,7 @@ data Query
     | Delete String 
     | Restock String Int 
     | Sell String Int 
-    | Check String
+    | Check [String]
     deriving(Eq, Show)
 
 data Storage = ItemType Item | StorageItem Storage Item deriving(Eq, Show)
@@ -92,22 +92,11 @@ parseQuery input =
                 Left err -> Left err
                 Right (_, rest2) -> 
                     case command of
-                        "Check" -> 
-                            case parseWord rest2 of
-                                Left err -> Left err
-                                Right (item, rest3) -> 
-                                    case parseWhitespace rest3 of
-                                        Left err -> Left err
-                                        Right (_, _) -> 
-                                            Right (Check item)  
+                        "Check" -> parseCheckItems rest2
                         "Delete" -> 
                             case parseWord rest2 of
                                 Left err -> Left err
-                                Right (item, rest3) -> 
-                                    case parseWhitespace rest3 of
-                                        Left err -> Left err
-                                        Right (_, _) -> 
-                                            Right (Delete item)  
+                                Right (item, _) -> Right (Delete item)
                         _ -> 
                             case parseWord rest2 of
                                 Left err -> Left err
@@ -123,6 +112,15 @@ parseQuery input =
                                                         "Restock" -> Right (Restock item quantity)
                                                         "Sell"    -> Right (Sell item quantity)
                                                         _         -> Left "Unrecognized command"
+
+-- Helper function to parse multiple items for Check command
+parseCheckItems :: String -> Either String Query
+parseCheckItems input =
+    let items = words input  -- splits the remaining input into individual words
+    in if null items
+       then Left "Parse error: expected at least one item for Check"
+       else Right (Check items)
+
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
 type Parser1 a = String -> Either String a
@@ -262,9 +260,9 @@ sell state itemName quantity =
                         Nothing -> 0 
 
     in if currentQuantity == 0 
-       then Left "ERROR: Item not found."
+       then Left "Item not found."
        else if currentQuantity < quantity 
-            then Left "ERROR: Not enough quantity to sell." 
+            then Left "Not enough quantity to sell." 
             else 
                 let newQuantity = currentQuantity - quantity  
                     updatedWritingUtensils = if writingQty /= Nothing
@@ -356,7 +354,7 @@ stateTransition state (Delete itemName) =
     in if doesItemExist itemName
         then let updatedState = delete state itemName
              in Right ([], updatedState)
-        else Left "Error: Item not found"
+        else Left "Item not found"
 
 stateTransition state (Restock itemStr quantityInt) =
     case restock itemStr quantityInt state of  
@@ -373,7 +371,7 @@ stateTransition state (Sell item quantity) =
                 updatedState = state { books = updatedBooks }
             in Right ([], updatedState)  -- updated state
         Just stock -> 
-            Left $ "Error: Not enough stock for " ++ item
+            Left $ "Not enough stock for " ++ item
         Nothing -> 
             -- If not found in books, check writing utensils
             case lookup item (writingUtensils state) of
@@ -382,7 +380,7 @@ stateTransition state (Sell item quantity) =
                         updatedState = state { writingUtensils = updatedWritingUtensils }
                     in Right ([], updatedState)
                 Just stock -> 
-                    Left $ "Error: Not enough stock for " ++ item
+                    Left $ "Not enough stock for " ++ item
                 Nothing -> 
                     -- If not found writing utensils, check art supplies
                     case lookup item (artSupplies state) of
@@ -391,7 +389,7 @@ stateTransition state (Sell item quantity) =
                                 updatedState = state { artSupplies = updatedArtSupplies }
                             in Right ([], updatedState)
                         Just stock -> 
-                            Left $ "Error: Not enough stock for " ++ item
+                            Left $ "Not enough stock for " ++ item
                         Nothing -> 
                             -- If not found in art supplies, check other items
                             case lookup item (otherItems state) of
@@ -400,19 +398,29 @@ stateTransition state (Sell item quantity) =
                                         updatedState = state { otherItems = updatedOtherItems }
                                     in Right ([], updatedState)
                                 Just stock -> 
-                                    Left $ "Error: Not enough stock for " ++ item
+                                    Left $ "Not enough stock for " ++ item
                                 Nothing -> 
                                     -- Final case if not found anywhere
-                                    Left $ "Error: Item " ++ item ++ " not found."
+                                    Left $ "Item " ++ item ++ " not found."
 
 ------------------------------------------------------------------------------------------------
 
-stateTransition state (Check itemName) =
-    case lookup itemName (writingUtensils state ++ books state ++ artSupplies state ++ otherItems state) of
-        Just quantity -> Right ([itemName ++ " has quantity " ++ show quantity], state)
-        Nothing -> Left $ "Error: Item " ++ itemName ++ " not found in storage"
+stateTransition state (Check itemNames) = 
+    let checkItem itemName =
+            case lookup itemName (writingUtensils state ++ books state ++ artSupplies state ++ otherItems state) of
+                Just quantity -> Right (itemName ++ " : " ++ show quantity)
+                Nothing -> Left $ "Item " ++ itemName ++ " not found in storage"
 
+        results = map checkItem itemNames
+        (foundItems, errors) = foldr (\x (items, errs) ->
+            case x of
+                Right item -> (item : items, errs)
+                Left err -> (items, err : errs)
+            ) ([], []) results
 
+    in if null errors
+       then Right (foundItems, state)
+       else Left (unlines errors)
 
 instance Eq State where
          (State wu1 b1 a1 o1) == (State wu2 b2 a2 o2) =

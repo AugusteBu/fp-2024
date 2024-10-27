@@ -1,0 +1,30 @@
+>>> Add fixative 5
+>>> Add bookmark 100
+>>> Restock oil 56
+>>> Restock graphite 45
+>>> Check graphite 
+graphite : 45
+>>> Check oil
+oil : 56
+>>> Check fixative
+fixative : 5
+>>> Check bookmarks
+ERROR:Item bookmarks not found in storage
+>>> Check bookmark 
+bookmark : 100
+>>> Sell oil 3
+>>> Check oil
+oil : 53
+>>> Delete oil
+>>> Check oil
+ERROR:Item oil not found in storage
+>>> Delete fixative
+>>> Check fixative
+ERROR:Item fixative not found in storage
+>>> Check graphite
+graphite : 45
+>>> Sell graphite 100
+ERROR:Not enough stock for graphite
+>>> Check fiction graphite
+fiction : 5
+graphite : 100
