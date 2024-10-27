@@ -14,7 +14,7 @@ import qualified Data.Char as C
     --import qualified Data.List as L
 
 data Query 
-    = Add String Int 
+    = Add [(String, Int)] 
     | Delete String 
     | Restock String Int 
     | Sell String Int 
@@ -83,6 +83,7 @@ parseWhitespace :: Parser String
 parseWhitespace input = 
     let (spaces, rest) = span (== ' ') input
     in Right (spaces, rest) 
+
 parseQuery :: String -> Either String Query
 parseQuery input =
     case parseWord input of
@@ -96,11 +97,8 @@ parseQuery input =
                         "Delete" -> 
                             case parseWord rest2 of
                                 Left err -> Left err
-                                Right (item, rest3) -> 
-                                    case parseWhitespace rest3 of
-                                        Left err -> Left err
-                                        Right (_, rest4) -> 
-                                            Right (Delete item)
+                                Right (item, _) -> Right (Delete item)
+                        "Add" -> parseAddItems rest2 -- Update to use new function
                         _ -> 
                             case parseWord rest2 of
                                 Left err -> Left err
@@ -112,10 +110,33 @@ parseQuery input =
                                                 Left _ -> Left "Parse error: expected quantity after item"
                                                 Right (quantity, _) -> 
                                                     case command of
-                                                        "Add"     -> Right (Add item quantity)
                                                         "Restock" -> Right (Restock item quantity)
                                                         "Sell"    -> Right (Sell item quantity)
                                                         _         -> Left "Unrecognized command"
+
+parseAddItems :: String -> Either String Query
+parseAddItems input = 
+    let itemsWithQuantities = parseItemsWithQuantities input
+    in case itemsWithQuantities of
+        Right items -> Right (Add items)
+        Left err -> Left err
+
+-- New function to parse multiple items with quantities
+parseItemsWithQuantities :: String -> Either String [(String, Int)]
+parseItemsWithQuantities input = go input []
+  where
+    go "" acc = Right (reverse acc)
+    go s acc = 
+        case parseWord s of
+            Left err -> Left err
+            Right (item, rest1) ->
+                case parseWhitespace rest1 of
+                    Left err -> Left err
+                    Right (_, rest2) ->
+                        case parseInt rest2 of
+                            Left _ -> Left "Expected quantity after item"
+                            Right (quantity, rest3) -> go rest3 ((item, quantity) : acc)
+
 
 -- Helper function to parse multiple items for Check command
 parseCheckItems :: String -> Either String Query
@@ -124,6 +145,7 @@ parseCheckItems input =
     in if null items
        then Left "Parse error: expected at least one item for Check"
        else Right (Check items)
+
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
 type Parser1 a = String -> Either String a
@@ -189,12 +211,12 @@ addItem :: [(String, Int)] -> String -> Int -> [(String, Int)]
 addItem currentItems itemStr quantityInt =
     let existingItem = lookup itemStr currentItems
         newQuantity = case existingItem of
-            Just qty -> qty + quantityInt  -- Increment existing quantity
-            Nothing  -> quantityInt         -- Start new quantity if not found
+            Just qty -> qty + quantityInt  
+            Nothing  -> quantityInt         
 
         updatedItems = case existingItem of
             Just _  -> map (\(name, qty) -> if name == itemStr then (name, newQuantity) else (name, qty)) currentItems
-            Nothing  -> currentItems ++ [(itemStr, quantityInt)]  -- Append if not found
+            Nothing  -> currentItems ++ [(itemStr, quantityInt)]  
 
     in updatedItems 
 
@@ -346,10 +368,16 @@ restock items quantities state =
 --------------------------------------------------STATE TRANSITIONS-----------------------------------------------------------
 
 stateTransition :: State -> Query -> Either String ([String], State)
-stateTransition currentState (Add item quantity) =
-    case add currentState item quantity of
-        Right updatedState -> Right ([], updatedState)
-        Left err -> Left err
+stateTransition currentState (Add items) =
+    foldr addItemToState (Right ([], currentState)) items
+  where
+    addItemToState (item, quantity) acc =
+        case acc of
+            Left err -> Left err
+            Right (messages, updatedState) ->
+                case add updatedState item quantity of
+                    Right newState -> Right (messages, newState)
+                    Left err -> Left err
 
 stateTransition state (Delete itemName) =
     let doesItemExist items = any (\(name, _) -> name == items) 
@@ -413,12 +441,14 @@ stateTransition state (Check itemNames) =
             case lookup itemName (writingUtensils state ++ books state ++ artSupplies state ++ otherItems state) of
                 Just quantity -> Right (itemName ++ " : " ++ show quantity)
                 Nothing -> Left $ "Item " ++ itemName ++ " not found in storage"
+
         results = map checkItem itemNames
         (foundItems, errors) = foldr (\x (items, errs) ->
             case x of
                 Right item -> (item : items, errs)
                 Left err -> (items, err : errs)
             ) ([], []) results
+
     in if null errors
        then Right (foundItems, state)
        else Left (unlines errors)
