@@ -1,10 +1,10 @@
-<Art store> ::= <Storage> <Writing utensils> <Books> <Art supplies>
+<Art store> ::= <Programme>
 
 <Item> = <Writing utensils> | <Books> | <Art supplies>
 
-<Programme> ::= "Add" <Storage> <Item> | "Delete" <Storage> <Item> | "Restock" <Storage> <Item> | "Sell" <Item> | "Exit"
+<Programme> ::= "Add" <Storage> <Quantity> | "Delete" <Storage> | "Restock" <Storage> <Quantity> | "Sell" <Storage> <Quantity> | Check <Storage>
 
-<Storage> ::= <Writing utensils> | <Storage> <Item>
+<Storage> ::= <Item> | <Storage> <Item>
 
 <Writing utensils> ::= <Pencils> | <Brushes> | <Pens>
 
