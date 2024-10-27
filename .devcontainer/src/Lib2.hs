@@ -96,7 +96,11 @@ parseQuery input =
                         "Delete" -> 
                             case parseWord rest2 of
                                 Left err -> Left err
-                                Right (item, _) -> Right (Delete item)
+                                Right (item, rest3) -> 
+                                    case parseWhitespace rest3 of
+                                        Left err -> Left err
+                                        Right (_, rest4) -> 
+                                            Right (Delete item)
                         _ -> 
                             case parseWord rest2 of
                                 Left err -> Left err
@@ -120,7 +124,6 @@ parseCheckItems input =
     in if null items
        then Left "Parse error: expected at least one item for Check"
        else Right (Check items)
-
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
 type Parser1 a = String -> Either String a
@@ -410,14 +413,12 @@ stateTransition state (Check itemNames) =
             case lookup itemName (writingUtensils state ++ books state ++ artSupplies state ++ otherItems state) of
                 Just quantity -> Right (itemName ++ " : " ++ show quantity)
                 Nothing -> Left $ "Item " ++ itemName ++ " not found in storage"
-
         results = map checkItem itemNames
         (foundItems, errors) = foldr (\x (items, errs) ->
             case x of
                 Right item -> (item : items, errs)
                 Left err -> (items, err : errs)
             ) ([], []) results
-
     in if null errors
        then Right (foundItems, state)
        else Left (unlines errors)
