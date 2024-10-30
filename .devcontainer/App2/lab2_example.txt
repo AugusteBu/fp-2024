@@ -15,4 +15,32 @@ Item: graphite not found.
 Added 100 of graphite
 >>> Check graphite
 Item: graphite, Count: 100 (Writing Utensil)
->>>
+>>> Add fixative 100
+Added 100 of fixative
+>>> Sell fixative 5
+Sold 5 of fixative
+>>> Check fixative
+Item: fixative, Count: 95 (Other Item)
+>>> Add fixative 5
+ERROR:Item already exists. Use restock to increase quantity.
+>>> Restock graphite 89
+>>> Restock graphite 1
+>>> Check graphite
+Item: graphite, Count: 190 (Writing Utensil)
+>>> Delete graphite
+Deleted graphite
+>>> Check graphite
+Item: graphite not found.
+>>> Add graphite
+PARSE ERROR:Parse error: expected quantity after item
+>>> Add graphite 89
+Added 89 of graphite
+>>> Check grapgite
+Item: grapgite not found.
+>>> Check graphite
+Item: graphite, Count: 89 (Writing Utensil)
+>>> Restock brush
+PARSE ERROR:Parse error: expected quantity after item
+>>> Restock brush 10
+>>> Check brush
+Item: brush, Count: 10 (Art Supply)
