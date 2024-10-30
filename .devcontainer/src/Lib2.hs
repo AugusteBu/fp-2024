@@ -9,7 +9,7 @@
 
     -- stack run and stack test
     --stack run exec fp-2024 twp?s
-    --stack exec  fp-2024-two
+    --stack exec  fp2024-two
 import qualified Data.Char as C
 import qualified Data.List as L
 
@@ -86,7 +86,7 @@ parseQuery input =
                                         Left err -> Left err
                                         Right (_, rest4) -> 
                                             case parseNumber rest4 of
-                                                Left _ -> Left "Parse error: expected quantity after item"
+                                                Left _ -> Left "expected quantity after item"
                                                 Right (quantity, _) -> 
                                                     case command of
                                                         "Add" -> Right(Add item quantity) 
@@ -131,7 +131,7 @@ parseCheckItems :: String -> Either String Query
 parseCheckItems input =
     let items = parseWords' input  
     in if null items
-       then Left "Parse error: expected at least one item for Check"
+       then Left "expected at least one item for Check"
        else Right (Check items)
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -141,15 +141,19 @@ parseCheckItems input =
 add :: State -> String -> Int -> Either String State
 add currentState itemStr quantityInt =
             if
-                elem' itemStr (writingUtensils currentState) ||
-                elem' itemStr (books currentState) ||
-                elem' itemStr (artSupplies currentState) ||
-                elem' itemStr (otherItems currentState)
+                or' (`elem'` writingUtensils currentState) 
+                    (or' (`elem'` books currentState) 
+                        (or' (`elem'` artSupplies currentState) 
+                            (`elem'` otherItems currentState)) 
+                    ) 
+                    itemStr
             then 
                 Left "Item already exists. Use restock to increase quantity."
             else 
                 Right $ addToCategory currentState itemStr quantityInt
 
+or' :: (a -> Bool) -> (a -> Bool) -> a -> Bool
+or' p1 p2 input = p1 input || p2 input
 --Check item in list
 elem' :: String -> [(String, Int)] -> Bool
 elem' _ [] = False
@@ -346,9 +350,9 @@ stateTransition currentState (Check itemNames) =
     in Right (checkResults, currentState) 
 
 
-instance Eq State where
-         (State wu1 b1 a1 o1) == (State wu2 b2 a2 o2) =
-             wu1 == wu2 && b1 == b2 && a1 == a2 && o1 == o2
+-- instance Eq State where
+--          (State wu1 b1 a1 o1) == (State wu2 b2 a2 o2) =
+--              wu1 == wu2 && b1 == b2 && a1 == a2 && o1 == o2
 
     -- data State = State 
     --     {
