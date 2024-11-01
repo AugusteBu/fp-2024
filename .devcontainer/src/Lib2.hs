@@ -13,6 +13,10 @@
 import qualified Data.Char as C
 import qualified Data.List as L
 
+--kelias komandas i viena eilute
+--reiks issaugoti state programos, saugosim oer komandsas per komandas, reiks generuoti komandas
+--atgamins?
+
 data Query 
     = Add String Int
     | Delete String 
@@ -66,35 +70,114 @@ type Parser a = String -> Either String (a, String)
 
 parseQuery :: String -> Either String Query
 parseQuery input =
+    case parseAdd input of 
+        Right addQuery -> Right addQuery
+        Left _ ->
+            case parseDelete input of 
+                Right deleteQuery -> Right deleteQuery 
+                Left _ -> 
+                    case parseRestock input of
+                        Right restockQuery -> Right restockQuery
+                        Left _ -> 
+                            case parseSell input of
+                                Right sellQuery -> Right sellQuery
+                                Left _ ->
+                                    case parseCheck input of
+                                        Right checkQuery -> Right checkQuery
+                                        Left err -> Left err
+                            
+
+
+parseRestock :: String -> Either String Query
+parseRestock input =
     case parseWord input of
         Left err -> Left err
-        Right (command, rest1) -> 
-            case parseWhitespace rest1 of
+        Right ("Restock", rest) ->
+            case parseWhitespace rest of
+                Left errr -> Left errr
+                Right (_, rest1) -> 
+                    case parseWord rest1 of
+                        Left errrr -> Left errrr
+                        Right (item, qntStr) ->
+                            case parseWhitespace qntStr of
+                                Left e -> Left e
+                                Right (_, qntStrNoSpc) ->
+                                    case parseNumber qntStrNoSpc of
+                                        Left errrrrr -> Left errrrrr
+                                        Right (quantity, _) -> Right (Restock item quantity)
+        Right (cmd, _) -> Left $ "Unrecognized command: " ++ cmd
+
+parseSell :: String -> Either String Query
+parseSell input =
+    case parseWord input of
+        Left err -> Left err
+        Right ("Sell", rest) ->
+            case parseWhitespace rest of
+                Left errr -> Left errr
+                Right (_, rest1) -> 
+                    case parseWord rest1 of
+                        Left errrr -> Left errrr
+                        Right (item, qntStr) ->
+                            case parseWhitespace qntStr of
+                                Left e -> Left e
+                                Right (_, qntStrNoSpc) ->
+                                    case parseNumber qntStrNoSpc of
+                                        Left errrrrr -> Left errrrrr
+                                        Right (quantity, _) -> Right (Sell item quantity)
+        Right (cmd, _) -> Left $ "Unrecognized command: " ++ cmd
+
+parseAdd :: String -> Either String Query
+parseAdd input = 
+    case parseWord input of                         --"Add", " smth 5"
+        Left er -> Left er
+        Right ("Add", rest1) -> case parseWhitespace rest1 of
                 Left err -> Left err
                 Right (_, rest2) -> 
-                    case command of
-                        "Check" -> parseCheckItems rest2        --
-                        "Delete" -> Right(Delete rest2)
-                        --    case parseWord rest2 of
-                               -- Left err -> Left err
-                             --   Right (item, _) -> Right (Delete item)
-                        _ -> 
-                            case parseWord rest2 of
-                                Left err -> Left err
-                                Right (item, rest3) -> 
-                                    case parseWhitespace rest3 of
-                                        Left err -> Left err
-                                        Right (_, rest4) -> 
-                                            case parseNumber rest4 of
-                                                Left _ -> Left "expected quantity after item"
-                                                Right (quantity, _) -> 
-                                                    case command of
-                                                        "Add" -> Right(Add item quantity) 
-                                                        "Restock" -> Right (Restock item quantity)
-                                                        "Sell"    -> Right (Sell item quantity)
-                                                        _         -> Left "Unrecognized command"
+                    case parseWord rest2 of                     --"Add" "smth" "5"?
+                        Left e -> Left e
+                        Right (item, rest3) -> case parseWhitespace rest3 of
+                            Left err -> Left err
+                            Right (_, rest4) -> case parseNumber rest4 of
+                                Left asd -> Left asd
+                                Right (quantity, _) -> Right(Add item quantity)
+        Right (cmd, _) -> Left $ "Unrecognized command: " ++ cmd
 
--- Parse a single word (sequence of letters)
+
+-- commandCheck :: String -> String -> Either String Query
+-- commandCheck cmd rest =  
+--     case cmd of
+--         "Check" -> parseCheckItems rest        --
+--         "Delete" -> deleteParser rest                                -- Right(Delete rest2)
+--         e -> Left e
+parseDelete :: String -> Either String Query
+parseDelete input = 
+    case parseWord input of
+        Right ("Delete", rest)  ->        --Delete and item
+            case parseWhitespace rest of
+            Left e -> Left e
+            Right (_, rest1) -> 
+                case parseWord rest1 of
+                    Right (item, _) -> Right (Delete item)
+                    Left err -> Left err     --if more written than item
+        Right (cmd, _) -> Left $ "Unrecognized command: " ++ cmd
+        Left er -> Left er
+
+--string parser palyginimas kuris patikrina ar prasideda delete add etc
+parseCheck :: String -> Either String Query
+parseCheck input =
+    case parseWord input of
+        Left e -> Left e
+        Right ("Check", rest) -> case parseWhitespace rest of
+            Left e -> Left e
+            Right (_, rest1) ->
+                let item = parseWords' rest1  
+                in if null item
+                then Left "expected at least one item for Check"
+                else Right (Check item)
+        Right (cmd, _) -> Left $ "Unrecognized command: " ++ cmd
+
+----------------------------------------------------------------------------------------------
+-- Parse a single word 
 parseWord :: Parser String
 parseWord input =
     let letters = L.takeWhile C.isLetter input
@@ -127,12 +210,32 @@ parseWords' s =
        then parseWords' (dropWhile (== ' ') rest)  
        else word : parseWords' (dropWhile (== ' ') rest)  
 
-parseCheckItems :: String -> Either String Query
-parseCheckItems input =
-    let items = parseWords' input  
-    in if null items
-       then Left "expected at least one item for Check"
-       else Right (Check items)
+        --     case parseWhitespace rest1 of
+        --         Left err -> Left err
+        --         Right (_, rest2) -> 
+
+        --            case command of
+        --                "Check" -> parseCheckItems rest2        --
+        --                "Delete" -> deleteParser rest2                                -- Right(Delete rest2)
+        --                _ -> 
+        --                     case parseWord rest2 of
+        --                         Left err -> Left err
+        --                         Right (item, rest3) -> 
+        --                             case parseWhitespace rest3 of
+        --                                 Left err -> Left err
+        --                                 Right (_, rest4) -> 
+        --                                     case parseNumber rest4 of
+        --                                         Left _ -> Left "expected quantity after item"
+        --                                         Right (quantity, _) -> 
+        --                                             case command of
+        --                                                 "Add" -> Right(Add item quantity) 
+        --                                                 "Restock" -> Right (Restock item quantity)
+        --                                                 "Sell"    -> Right (Sell item quantity)
+        --                                                 _         -> Left "Unrecognized command"
+--parseQuery input = 
+
+--parseDelete input =
+    --jei input prasidedea su delete case tai return right ("Delete", rest) if not retun nothign or left
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------
 --type Parser1 a = String -> Either String a
@@ -141,19 +244,16 @@ parseCheckItems input =
 add :: State -> String -> Int -> Either String State
 add currentState itemStr quantityInt =
             if
-                or' (`elem'` writingUtensils currentState) 
-                    (or' (`elem'` books currentState) 
-                        (or' (`elem'` artSupplies currentState) 
-                            (`elem'` otherItems currentState)) 
-                    ) 
-                    itemStr
+                elem' itemStr (writingUtensils currentState) ||
+                elem' itemStr (books currentState) ||
+                elem' itemStr (artSupplies currentState) ||
+                elem' itemStr (otherItems currentState)
             then 
                 Left "Item already exists. Use restock to increase quantity."
             else 
                 Right $ addToCategory currentState itemStr quantityInt
 
-or' :: (a -> Bool) -> (a -> Bool) -> a -> Bool
-or' p1 p2 input = p1 input || p2 input
+
 --Check item in list
 elem' :: String -> [(String, Int)] -> Bool
 elem' _ [] = False
@@ -214,7 +314,6 @@ delete state itemName =
 
 deleteFromList :: [(String, Int)] -> String -> [(String, Int)]
 deleteFromList items itemName = filter (\(name, _) -> name /= itemName) items
-
 
 
 -------------------------------------------------------------------SELL-----------------------------------------------------------
@@ -317,7 +416,6 @@ restock items quantities state =
                 })
 
 
-
 --------------------------------------------------STATE TRANSITIONS-----------------------------------------------------------
 
 stateTransition :: State -> Query -> Either String ([String], State)
@@ -348,6 +446,8 @@ stateTransition currentState (Sell item quantity) =
 stateTransition currentState (Check itemNames) = 
     let checkResults = map (check currentState) itemNames  
     in Right (checkResults, currentState) 
+
+
 
 
 -- instance Eq State where

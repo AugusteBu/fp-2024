@@ -41,7 +41,7 @@ unitTests = testGroup "Lib2 tests"
 
             , testCase "Unrecognized command" $ 
                 let input = "Buy Pencil 10"
-                    expected = Left "Unrecognized command"
+                    expected = Left "Unrecognized command: Buy"
                 in Lib2.parseQuery input @?= expected
 
             ]
