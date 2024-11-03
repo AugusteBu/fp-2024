@@ -66,25 +66,34 @@ emptyState = State {
 
 type Parser a = String -> Either String (a, String)
 
+or' :: Either String Query -> Either String Query -> Either String Query
+or' (Right query) _ = Right query   
+or' (Left _) (Right query) = Right query 
+or' (Left _) (Left er) = Left (er)   
 
 
 parseQuery :: String -> Either String Query
 parseQuery input =
-    case parseAdd input of 
-        Right addQuery -> Right addQuery
-        Left _ ->
-            case parseDelete input of 
-                Right deleteQuery -> Right deleteQuery 
-                Left _ -> 
-                    case parseRestock input of
-                        Right restockQuery -> Right restockQuery
-                        Left _ -> 
-                            case parseSell input of
-                                Right sellQuery -> Right sellQuery
-                                Left _ ->
-                                    case parseCheck input of
-                                        Right checkQuery -> Right checkQuery
-                                        Left err -> Left err
+        or' (parseAdd input)
+    (or' (parseDelete input)
+    (or' (parseRestock input)
+    (or' (parseSell input)
+    (parseCheck input))))
+    -- case parseAdd input of 
+    --     Right addQuery -> Right addQuery
+    --     Left _ ->
+    --         case parseDelete input of 
+    --             Right deleteQuery -> Right deleteQuery 
+    --             Left _ -> 
+    --                 case parseRestock input of
+    --                     Right restockQuery -> Right restockQuery
+    --                     Left _ -> 
+    --                         case parseSell input of
+    --                             Right sellQuery -> Right sellQuery
+    --                             Left _ ->
+    --                                 case parseCheck input of
+    --                                     Right checkQuery -> Right checkQuery
+    --                                     Left err -> Left err
                             
 
 
@@ -133,7 +142,7 @@ parseAdd input =
         Right ("Add", rest1) -> case parseWhitespace rest1 of
                 Left err -> Left err
                 Right (_, rest2) -> 
-                    case parseWord rest2 of                     --"Add" "smth" "5"?
+                    case parseWord rest2 of                     --"Add" "smth" " 5"?
                         Left e -> Left e
                         Right (item, rest3) -> case parseWhitespace rest3 of
                             Left err -> Left err
