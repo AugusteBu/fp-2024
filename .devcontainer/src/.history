@@ -1,3 +1,77 @@
+END
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+END
+Add orange 5;
+Restock oil 10;
+BEGIN
+:paste
+END
+BEGIN
+Sell oil 2;
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+:paste
+END
+Sell oil 2;
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+END
+Sell oil 2;
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+END
+Add orange 5;
+Sell oil 2;
+Restock oil 10;
+BEGIN
+:paste
+BEGIN
+BEGIN
+print result
+let result = splitBySemicolon "Add orange 5;Sell oil 2;Restock oil 10;Sell oil 2;END"
+END
+Sell oil 2;
+Restock oil 10;
+Sell oil 2;
+Add orange 5;
+BEGIN
+:paste
+:pasrw
+END
+Sell oil 2;
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+Check oil
+END
+Sell oil 2;
+Add orange 5;
+Restock oil 10;
+BEGIN
+:paste
+END
+Check orange oil;
+Sell oil 2;
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+END
+Sell oil 2
+Restock oil 10
+Add orange 5;
+BEGIN
+:paste
 fee
 fs
 Check oil graphite
@@ -24,77 +98,3 @@ Check graphite
 Delete graphite
 Add oil
 Check pumpkin oil
-Check pumpkin
-Add pumpkin 5
-Check h oil
-Check h
-Add h 4
-Check h oil
-Check h
-Add h 5
-fr
-Check fix
-Delete fix 4
-Add fix 5
-Check fix
-Check oil
-Check fix
-Delete fix 1
-Add fix 4
-Add two 5
-Check pp
-Add tt 4 pp 6
-Check fix
-check fix
-Add fix 5
-Check one
-Check two
-Add one 1 two 2
-Check on
-Check one
-Check two
-Add on 1 two 2
-Check f o
-Check f
-Add o 5
-Check f
-Restock f 7
-Check f
-Add f 5
-Add oil 5
-Add g 4 g 7
-Add p 5
-Add r 4 p 5
-Add jp 5
-Add g 5
-Check oil
-Check j
-Add j 5
-Check otherItems
-Check j
-Add j 5
-Check u
-Add u 7
-Add u
-otherItems
-Check fix
-Add fix 5
-Check g
-Add g 5 dw 4 fes 5
-Check fix
-Add fix 7
-Check fic
-Check fixc
-Check fix 
-Add fic 5
-Check lol yay woop
-Check yay
-Check lol
-Add lol 5 yay 4 woop 10
-Add fixative 5
-Add candy 4 pencilss 3 cars 10
-Check fixative
-Sell fixative 3
-Add fixative 5
-Check fiction graphite
-Restock fiction 5

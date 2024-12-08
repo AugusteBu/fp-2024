@@ -187,6 +187,8 @@ parseCheck input =
 
 ----------------------------------------------------------------------------------------------
 -- Parse a single word 
+-- type Parser a = String -> Either String (a, String)
+
 parseWord :: Parser String
 parseWord input =
     let letters = L.takeWhile C.isLetter input

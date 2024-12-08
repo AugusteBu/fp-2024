@@ -1,0 +1,93 @@
+END
+Delete graphite;
+Restock gel 5;
+Sell apple 5;
+Add apple 100;
+BEGIN
+:paste 
+END
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+ADd orange 5;
+BEGIN
+:paste
+END
+Restock oil 1000;
+Add orange 5;
+BEGIN
+:paste
+END
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+END
+Restock 10;
+Add orange 5;
+BEGIN
+:paste
+:paste
+Add oil5;
+Add oil 5
+Check oil
+END
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+END
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+Add oil 5
+Check oil
+END
+Sell oil 2;
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+END
+Sell oil 2;
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+BEGIN
+END
+Sell oil 2;
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+END
+Sell oil 2;
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+END
+Sell oil 2;
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+END
+Sell oil 2;
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+Sell oil 2
+Restock oil 10;
+Add orange 5;
+BEGIN
+:paste
+:pasye
+Restock oil 10
+Add orange 5;
+BEGIN
+:paste

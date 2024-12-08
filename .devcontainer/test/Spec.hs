@@ -1,10 +1,14 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 
-import Test.Tasty (TestTree, defaultMain, testGroup)
-import Test.Tasty.HUnit (testCase, (@?=))
+import Test.Tasty ( TestTree, defaultMain, testGroup )
+import Test.Tasty.HUnit ( testCase, (@?=) )
+import Test.Tasty.QuickCheck as QC
+
+import Data.List
+import Data.Ord
 
 import Lib1 qualified
-import Lib2 qualified 
+import Lib2 qualified
 
 main :: IO ()
 main = defaultMain tests
@@ -45,3 +49,13 @@ unitTests = testGroup "Lib2 tests"
                 in Lib2.parseQuery input @?= expected
 
             ]
+propertyTests :: TestTree
+propertyTests = testGroup "Property Tests"
+[ QC.testProperty "Adding an item and restocking results in the correct quantity" $ 
+      \(item, quantity, restockQuantity) -> 
+        let initialState = Lib2.parseAdd [] item quantity  
+            updatedState = Lib2.parseAdd initialState item restockQuantity  
+            expectedQuantity = quantity + restockQuantity  
+            finalQuantity = fromMaybe 0 (lookup item updatedState) 
+        in finalQuantity == expectedQuantity  
+    ]

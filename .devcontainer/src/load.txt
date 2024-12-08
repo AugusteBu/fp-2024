@@ -1,0 +1,8 @@
+BEGIN
+Add pencil_sharpener 2;
+Restock oil 100;
+Restock graphite 13;
+Delete fiction;
+Sell oil 56;
+Check pencil_sharpener oil graphite;
+END
