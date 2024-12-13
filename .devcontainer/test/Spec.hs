@@ -111,19 +111,26 @@ prop_addAndRestock = monadicIO $ do
 
     let initialState = Lib2.emptyState
 
-    updatedState <- run $ case Lib2.stateTransition initialState (Lib2.Add item quantity) of        --pridedea i empty state
+    updatedState <- run $ case Lib2.stateTransition initialState (Lib2.Add item quantity) of
         Right (_, state) -> return state
-        Left err -> error ("Error applying Add command: " ++ show err)  
-    finalState <- run $ case Lib2.stateTransition updatedState (Lib2.Restock item restockQuantity) of       --su pridetais daiktais
+        Left err -> error ("Error applying Add command: " ++ show err)
+    
+    finalState <- run $ case Lib2.stateTransition updatedState (Lib2.Restock item restockQuantity) of
         Right (_, state) -> return state
         Left err -> error ("Error applying Restock command: " ++ show err)
+
+         
+    let currentWritingQty = maybe 0 snd( find (\(i, _) -> i == item) (Lib2.writingUtensils finalState))
+        currentBookQty =  maybe 0 snd (find (\(i, _) -> i == item) (Lib2.books finalState))
+        currentArtQty =  maybe 0 snd (find (\(i, _) -> i == item) (Lib2.artSupplies finalState))
+        currentOtherQty =  maybe 0 snd (find (\(i, _) -> i == item) (Lib2.otherItems finalState))
+
+    let currentQuantity = currentWritingQty + currentBookQty + currentArtQty + currentOtherQty
+    let expectedQuantity = quantity + restockQuantity
+
+   -- trace ("STATES: = " ++ show finalState ++ ", START: " ++ show quantity ++ " END: " ++ show restockQuantity ++ " UPDATED: " ++ show updatedState) (return ())
     
-
-    let serializedLoadedState = Lib3.marshallState finalState
-
-
-   -- trace ("STATES: = " ++ show updatedState ++ ",  FIANL  = " ++ show finalState ++ "\nSTART = " ++ show quantity ++ "    END: " ++ show restockQuantity ++ "\n") (return ())
-    Test.QuickCheck.Monadic.assert $ (quantity + restockQuantity) == 
+    Test.QuickCheck.Monadic.assert (currentQuantity == expectedQuantity)
 
 
 --SAVE AND LOAD
@@ -165,3 +172,45 @@ applyCommand stateVar ioChan query = do
     case Lib2.stateTransition (Lib2.emptyState) query of
         Right (_, updatedState) -> atomically $ writeTVar stateVar updatedState
         Left err -> putStrLn $ "Error applying command: " ++ err
+
+-- prop_fullQueries :: Property
+-- prop_fullQueries = monadicIO $ do
+--     stateVar <- liftIO $ newTVarIO Lib2.emptyState
+--     ioChan <- liftIO $ newChan
+--     _ <- liftIO $ forkIO $ Lib3.storageOpLoop ioChan
+--     randomStatement <- liftIO $ generate arbitrary
+--     let wrappedStatement = "BEGIN\n" ++ show randomStatement ++ "\nEND"
+    
+--     case Lib3.parseCommand wrappedStatement of
+--         Right (command, _) -> liftIO $ Lib3.stateTransition stateVar command ioChan
+--         Left err -> error $ "Error parsing command: " ++ err
+
+--     case randomStatement of
+--       Lib3.Batch queries -> do
+--           mapM_ (\query -> do
+--                   let command = Lib3.StorageOp query 
+--                   result <- liftIO $ Lib3.stateTransition stateVar command ioChan
+--                   case result of
+--                       Right (_, newState) -> return ()  
+--                       Left err -> error $ "Error applying query: " ++ show err
+--               ) queries
+--           finalState <- liftIO $ readTVarIO stateVar
+--           let expectedState = foldl
+--                   (\state query -> 
+--                       case Lib2.stateTransition state query of
+--                           Right (_, newState) -> newState
+--                           Left _ -> state
+--                   ) Lib2.emptyState queries
+--           Test.QuickCheck.Monadic.assert (finalState == expectedState)
+
+--       Lib3.Single query -> do
+--           let command = Lib3.StorageOp query 
+--           result <- liftIO $ Lib3.stateTransition stateVar command ioChan
+--           case result of
+--               Right (_, newState) -> do
+--                   finalState <- liftIO $ readTVarIO stateVar
+--                   let expectedState = case Lib2.stateTransition Lib2.emptyState query of
+--                           Right (_, newState') -> newState'
+--                           Left _ -> Lib2.emptyState
+--                   Test.QuickCheck.Monadic.assert (finalState == expectedState)
+--               Left err -> error $ "Error applying query: " ++ show err
