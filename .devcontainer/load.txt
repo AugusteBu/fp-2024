@@ -1,0 +1,8 @@
+BEGIN
+Add orange 2;
+Restock oil 100;
+Restock orange 5000;
+Sell orange 11;
+Restock graphite 13;
+Delete fiction;
+END

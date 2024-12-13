@@ -6,7 +6,10 @@ module Lib3
     parseCommand,
     parseStatements,
     marshallState,
-    renderStatements
+    Statements(..),
+    Command(..),
+    renderStatements,
+    renderQuery
     ) where
 
 import qualified Lib2
@@ -32,16 +35,20 @@ type Parser a = String -> Either String (a, String)
 
 storageOpLoop :: Chan StorageOp -> IO ()
 storageOpLoop chan = forever $ do
-    op <- readChan chan
+    op <- readChan chan 
     case op of
         Save content responseChan -> do
-            writeFile "save.txt" content
-            writeChan responseChan ()
+            writeFile "state.txt" content
+            writeChan responseChan () 
+
         Load responseChan -> do
-            content <- readFile "load.txt"
-            writeChan responseChan content
+            fileContent <- tryReadFile "C:\\Users\\Auguste\\fp-2024\\.devcontainer\\load.txt"
+            writeChan responseChan fileContent  
 
-
+tryReadFile :: FilePath -> IO String
+tryReadFile filePath = do
+    content <- readFile filePath
+    return content
 
 parseWord :: Parser String
 parseWord input =
@@ -54,90 +61,81 @@ parseWord input =
 parseWhitespace :: Parser String
 parseWhitespace input = 
     let (spaces, rest) = span (== '\n') input
-    in trace ("parseWhitespace: spaces = " ++ show spaces ++ ", rest = " ++ show rest) $
-       Right (spaces, rest)
+    --in trace ("parseWhitespace: spaces = " ++ show spaces ++ ", rest = " ++ show rest) $
+    in   Right (spaces, rest)
  -- apple; orange; banana; END    ->    [apple\n, orange\n, banana\n, END\n]?
 
 
 parseCommand :: String -> Either String (Command, String)
 parseCommand input =
   case parseWord input of
-    Right ("Save", rest) -> 
-      Right (SaveCommand, rest)
-    Right ("Load", rest) -> 
-      Right (LoadCommand, rest)
-    Right ("BEGIN", rest) -> 
-      let queries = map trim (splitBySemicolon rest)  --  "apple; banana; END" -> ["apple", "banana", "END"]
-      in trace ("parseCommand: queries = " ++ show queries) $
-         if not (null queries) && last queries == "END" then
-           -- Parse all the queries except the last one (because it's "END").
-           case mapM Lib2.parseQuery (init queries) of
-             Right parsedQueries -> 
-               Right (StatementCommand (Batch parsedQueries), "")
-             Left err -> 
-               Left $ "Error parsing queries: " ++ err
-         else 
-           Left "Error parsing queries: Missing or malformed END"    
-    Right (_, _) -> 
-      case Lib2.parseQuery input of
-        Right query -> 
-          Right (StatementCommand (Single query), "")
-        Left err -> 
-          Left $ "Unknown command or invalid query: " ++ err
-    Left err -> 
-      Left $ "Error parsing command: " ++ err
+    Right ("Save", rest) -> Right (SaveCommand, rest)
+    Right ("Load", rest) -> Right (LoadCommand, rest)
+    Right ("BEGIN", rest) -> parseBeginCommand rest
+    Right (_, _) -> parseQueryCommand input
+    Left err -> Left $ "Error parsing command: " ++ err
 
+parseBeginCommand :: String -> Either String (Command, String)
+parseBeginCommand rest =
+    let trimmedRest = trim rest
+        queries = map trim (splitBySemicolon trimmedRest)
+ -- in trace ("parseCommand: queries = " ++ show queries) $
+   in    if not (null queries) && last queries == "END" then
+         parseBatchCommand (init queries)  
+       else
+         Left "Error parsing queries: Missing END"
 
+parseBatchCommand :: [String] -> Either String (Command, String)
+parseBatchCommand queries =
+  case mapM Lib2.parseQuery queries of
+    Right parsedQueries -> Right (StatementCommand (Batch parsedQueries), "")
+    Left err -> Left $ "Error parsing queries: " ++ err
 
+parseQueryCommand :: String -> Either String (Command, String)
+parseQueryCommand input =
+  case Lib2.parseQuery input of
+    Right query -> Right (StatementCommand (Single query), "")
+    Left err -> Left $ "Unknown command or invalid query: " ++ err
 
--- | Parses Statement.
--- Must be used in parseCommand.
--- Reuse Lib2 as much as you can.
--- You can change Lib2.parseQuery signature if needed.
 parseStatements :: String -> Either String (Statements, String)
 parseStatements query =
-    let queries = splitBySemicolon query
-        parsedResults = map Lib2.parseQuery queries
-    in trace ("parseStatements: queries = " ++ show queries ++ ", parsedResults = " ++ show parsedResults) $ 
-       if all isRight parsedResults
-          then
-            let parsedQueries = map (\(Right q) -> q) parsedResults
-            in Right (Batch parsedQueries, "")
-          else Left "Failed to parse one or more queries in the input."
+  let trimmedQuery = trim query
+      withoutBegin = removePrefix "BEGIN" trimmedQuery
+      withoutEnd = removeSuffix "END" withoutBegin
+      queries = filter (not . null) (map trim (splitBySemicolon withoutEnd))
+  --in trace ("parseStatements: queries = " ++ show queries) $
+  in     case mapM Lib2.parseQuery queries of
+         Right parsedQueries -> Right (Batch parsedQueries, "")
+         Left err -> Left $ "Failed to parse one or more queries: " ++ show err
 
+removePrefix :: String -> String -> String
+removePrefix prefix str
+  | prefix `L.isPrefixOf` str = drop (length prefix) str
+  | otherwise = str
 
-
-parseBatch :: String -> Either String ([Lib2.Query], String)
-parseBatch input = case parseWord input of
-  Right (h, _) -> 
-    let dropped = L.dropWhileEnd (== '\n') h in 
-        if dropped == "END" then Right ([], "")
-        else Left ("Expected END but got " ++ dropped)
-  Left e -> Left e
-
-
+removeSuffix :: String -> String -> String
+removeSuffix suffix str
+  | suffix `L.isSuffixOf` str = take (length str - length suffix) str
+  | otherwise = str
 
 splitBySemicolon :: String -> [String]
 splitBySemicolon [] = []
-splitBySemicolon input =
+splitBySemicolon input = 
   let (part, rest) = span (/= ';') input
-  in trace ("splitBySemicolon: part = " ++ show part ++ ", rest = " ++ show rest) $
-     case parseWhitespace part of
+  in case parseWhitespace part of
        Right (_, commandWithoutSpace) -> 
-         commandWithoutSpace : case rest of
-                          []     -> []
-                          (_:xs) -> splitBySemicolon xs
+         trim commandWithoutSpace : case rest of
+           []     -> []
+           (_:xs) -> splitBySemicolon xs
        Left _ -> []
-
-
 
 trim :: String -> String
 trim = dropWhile C.isSpace . reverse . dropWhile C.isSpace . reverse
 
-
 isRight :: Either a b -> Bool
 isRight (Right _) = True
 isRight _ = False
+
 
 
 -- parseBatch :: String -> Either String ([Lib2.Query], String)
@@ -158,14 +156,52 @@ isRight _ = False
 -- | Converts program's state into Statements
 -- (probably a batch, but might be a single query)
 -- | Converts program's state into Statements (single or batch query)
-marshallState :: Lib2.State -> Statements
-marshallState state =
-    let names = getNames state
-    in if null names
-       then Single (Lib2.Check ["No Operations"])
-       else Batch (map (createQuery state) names)
+marshallState :: Lib2.State -> Statements 
+marshallState currentState =
+    let addedItems = getNewItems currentState
+        addQueries = map (\(item, quantity) -> Lib2.Add item quantity) addedItems
 
--- Get the names of items from the state
+        restockedItems = getRestockedItems currentState
+        restockQueries = map (\(item, quantity) -> Lib2.Restock item quantity) restockedItems
+
+        deletedItems = getDeletedItems currentState
+        deleteQueries = map Lib2.Delete deletedItems
+
+        allQueries = addQueries ++ restockQueries ++ deleteQueries
+    in if null allQueries
+       then Single (Lib2.Check ["No Operations"])  
+       else Batch allQueries 
+
+getNewItems :: Lib2.State -> [(String, Int)]
+getNewItems state =
+    filter (\(item, quantity) -> quantity > 0 && not (isRestockable item)) (getAllItems state)
+
+getRestockedItems :: Lib2.State -> [(String, Int)]
+getRestockedItems state =
+    filter (\(item, quantity) -> quantity > 0 && isRestockable item) (getAllItems state)
+
+getDeletedItems :: Lib2.State -> [String]
+getDeletedItems state =
+    let currentItems = map fst (getAllItems state)  
+    in filter (\item -> item `notElem` currentItems) restockableItems
+
+getAllItems :: Lib2.State -> [(String, Int)]
+getAllItems state = 
+    (Lib2.writingUtensils state) ++
+    (Lib2.books state) ++
+    (Lib2.artSupplies state) ++
+    (Lib2.otherItems state)
+
+restockableItems :: [String]
+restockableItems = 
+    ["graphite", "mechanical", "ballpoint", "fountain", "gel", "fiction", "mystery", "poetry", 
+     "brush", "canvases", "oil", "watercolors", "acrylics", "sketchpads", "notebooks"]
+
+isRestockable :: String -> Bool
+isRestockable item = item `elem` restockableItems
+
+
+--EVERY
 getNames :: Lib2.State -> [String]
 getNames state =
   let getItemNames items = map fst items
@@ -174,13 +210,6 @@ getNames state =
      (getItemNames (Lib2.artSupplies state)) ++
      (getItemNames (Lib2.otherItems state))
 
--- Create a query based on the name of an item
-createQuery :: Lib2.State -> String -> Lib2.Query
-createQuery state name
-  | name `elem` map fst (Lib2.writingUtensils state) = Lib2.Add name 1  
-  | name `elem` map fst (Lib2.books state)           = Lib2.Add name 1 
-  | name `elem` map fst (Lib2.artSupplies state)     = Lib2.Add name 1 
-  | otherwise                                        = Lib2.Delete name
 
 -- | Renders Statements into a String which
 -- can be parsed back into Statements by parseStatements
@@ -190,15 +219,12 @@ createQuery state name
 -- for all s: parseStatements (renderStatements s) == Right(s, "")
 -- | Renders Statements into a String which can be parsed back by parseStatements
 renderStatements :: Statements -> String
-renderStatements (Single query) = renderQuery query
-renderStatements (Batch queries) = L.intercalate ";\n" (map renderQuery queries)
+renderStatements (Single query) =
+    "BEGIN\n" ++ renderQuery query ++ ";\nEND"
+renderStatements (Batch queries) =
+    "BEGIN\n" ++ unlines (map (\q -> renderQuery q ++ ";") queries) ++ "END"
 
 
-testRenderParse :: Statements -> Bool
-testRenderParse stmts =
-    case parseStatements (renderStatements stmts) of
-        Right (parsed, _) -> stmts == parsed
-        Left err -> trace ("Parse error: " ++ show err) False
 
 renderQuery :: Lib2.Query -> String
 renderQuery (Lib2.Add item quantity) = "Add " ++ item ++ " " ++ show quantity
@@ -222,28 +248,19 @@ renderQuery (Lib2.Check items) = "Check " ++ L.intercalate ", " items
 -- Update items in state using the provided function (either add or restock)
 updateStateItems :: Lib2.State -> String -> Int -> ([(String, Int)] -> String -> Int -> [(String, Int)]) -> Lib2.State
 updateStateItems state item quantity updateFunc =
-  let 
-      updatedWritingUtensils = updateFunc (Lib2.writingUtensils state) item quantity
-      updatedBooks = updateFunc (Lib2.books state) item quantity
-      updatedArtSupplies = updateFunc (Lib2.artSupplies state) item quantity
-      updatedOtherItems = updateFunc (Lib2.otherItems state) item quantity
-  in state { Lib2.writingUtensils = updatedWritingUtensils
-           , Lib2.books = updatedBooks
-           , Lib2.artSupplies = updatedArtSupplies
-           , Lib2.otherItems = updatedOtherItems
-           }
+  state { Lib2.writingUtensils = updateFunc (Lib2.writingUtensils state) item quantity
+        , Lib2.books = updateFunc (Lib2.books state) item quantity
+        , Lib2.artSupplies = updateFunc (Lib2.artSupplies state) item quantity
+        , Lib2.otherItems = updateFunc (Lib2.otherItems state) item quantity
+        }
            
 deleteItemFromState :: Lib2.State -> String -> Lib2.State
 deleteItemFromState state item =
-  let updatedWritingUtensils = deleteItemFromList (Lib2.writingUtensils state) item
-      updatedBooks = deleteItemFromList (Lib2.books state) item
-      updatedArtSupplies = deleteItemFromList (Lib2.artSupplies state) item
-      updatedOtherItems = deleteItemFromList (Lib2.otherItems state) item
-  in state { Lib2.writingUtensils = updatedWritingUtensils
-           , Lib2.books = updatedBooks
-           , Lib2.artSupplies = updatedArtSupplies
-           , Lib2.otherItems = updatedOtherItems
-           }
+  state { Lib2.writingUtensils = deleteItemFromList (Lib2.writingUtensils state) item
+        , Lib2.books = deleteItemFromList (Lib2.books state) item
+        , Lib2.artSupplies = deleteItemFromList (Lib2.artSupplies state) item
+        , Lib2.otherItems = deleteItemFromList (Lib2.otherItems state) item
+        }
            
 deleteItemFromList :: [(String, Int)] -> String -> [(String, Int)]
 deleteItemFromList items item = filter (\(i, _) -> i /= item) items
@@ -321,45 +338,30 @@ applyQueryToState state (Lib2.Check _) =
            "\nArt Supplies:\n" ++ displayItems (Lib2.artSupplies state) ++
            "\nOther Items:\n" ++ displayItems (Lib2.otherItems state)) state
 
-stateTransition :: TVar Lib2.State -> Command -> Chan StorageOp -> IO (Either String (Maybe String, String))
-stateTransition stateVar SaveCommand ioChan = do
-  responseChan <- newChan
-  writeChan ioChan (Save "state.txt" responseChan)
-  _ <- readChan responseChan
-  currentState <- atomically $ readTVar stateVar
-  return $ Right (Just "State saved", show currentState)
 
-stateTransition stateVar LoadCommand ioChan = do
-  responseChan <- newChan
-  writeChan ioChan (Load responseChan)
-  fileContent <- readChan responseChan
-  
-  let eitherFileContent = Right fileContent
-
-  either 
-    (\err -> return $ Left ("Error loading file: " ++ err))  
-    (\content -> do                                   
-      let newState = parseStateFromFile content
-      atomically $ writeTVar stateVar newState
-      currentState <- atomically $ readTVar stateVar
-      return $ Right (Just "State loaded", show currentState)
-    ) eitherFileContent
-
-
-
-stateTransition stateVar (StatementCommand statements) ioChan = do
-  newState <- atomically $ do
-    oldState <- readTVar stateVar
-    let updatedState = applyStatementsToState oldState statements
-    writeTVar stateVar updatedState
-    return updatedState
-  return $ Right (Just "State updated", show newState)
-
-
-
-
-parseStateFromFile :: String -> Lib2.State
-parseStateFromFile content = 
-  error "parseStateFromFile not implemented"
-
-
+stateTransition :: TVar Lib2.State -> Command -> Chan StorageOp -> IO (Either String (Maybe String))
+stateTransition stateVar command ioChan = case command of
+    SaveCommand -> do
+        currentState <- readTVarIO stateVar
+        let serializedState = renderStatements $ marshallState currentState
+        responseChan <- newChan
+        writeChan ioChan (Save serializedState responseChan)
+        readChan responseChan
+        return $ Right (Just "State saved successfully.")
+    
+    LoadCommand -> do
+        responseChan <- newChan
+        writeChan ioChan (Load responseChan)
+        result <- readChan responseChan
+        case parseStatements result of
+            Right (statements, _) -> do
+                let newState = applyStatementsToState Lib2.emptyState statements
+                atomically $ writeTVar stateVar newState
+                return $ Right (Just "State loaded successfully.")
+            Left err -> return $ Left $ "Error loading state: " ++ err
+    
+    StatementCommand statements -> atomically $ do
+        currentState <- readTVar stateVar
+        let newState = applyStatementsToState currentState statements
+        writeTVar stateVar newState
+        return $ Right Nothing

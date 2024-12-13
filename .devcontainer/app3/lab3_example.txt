@@ -1,0 +1,52 @@
+Queries and saving:
+
+	>>> :paste 
+	-- Entering multi-line mode. Press <Ctrl-D> to finish.
+	| BEGIN
+	| Add orange 1000; 
+	| Restock oil 100;
+	| Delete graphite;
+	| Restock fiction 5;
+	| Sell oil 55;
+	| END
+	| 
+	>>> Save
+	State saved successfully.
+	>>>
+
+	the state saved in the state.txt file:
+		BEGIN
+		Add orange 1000;
+		Restock fiction 5;
+		Restock oil 45;
+		Delete graphite;
+		END
+
+
+
+loading and saving:
+
+	Load.txt:
+		BEGIN
+		Add orange 2;
+		Restock oil 100;
+		Restock orange 5000;
+		Sell orange 11;
+		Restock graphite 13;
+		Delete fiction;
+		END
+
+
+	>>> Load
+	State loaded successfully.
+	>>> Save
+	State saved successfully.
+	>>>
+
+	state.txt (after saving):
+		BEGIN
+		Add orange 4991;
+		Restock graphite 13;
+		Restock oil 100;
+		Delete fiction;
+		END

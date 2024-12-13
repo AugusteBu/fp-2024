@@ -1,93 +1,100 @@
+Save
+Load
+Save
+Load
+clean
+:clear
+clear
+Save
+END
+Sell oil 55;
+Restock fiction 5;
+Delete graphite;
+Restock oil 100;
+Add orange 1000;
+BEGIN
+:paste
+Save
+END
+Delete orange;
+Restock oil 5;
+Add orange 5;
+BEGIN
+:paste
+Save
+Check orin
+Add orin 56
+Add orange 100
+Add orange 100;
+Save
+Load
+Load
+Load
+Load
+Load
+Load
+Load
+Load
+Load
+END
+Add jkjkljkl 456;
+BEGIN
+:paste
+Load
+Save
+END
+Add jsdoi 5;
+BEGIN
+:paste
+Load
+Save
+END
+Add fefs 5;
+BEGIN
+:paste
+Load
+Load
+END
+Add fefes 5;
+BEGIN
+:paste
+Load
+END
+Restock oil 5;
+Add feges 5;
+BEGIN
+:paste
+BEGIN
+END
+Add fiefe 5;
+BEGIN
+:paste
+END
+Add orange 5;
+BEGIN
+:paste
+Load
+Load
+Load
+Load
+Load
+Load
+Load
+Load
+Load
+Load
+Load
+Load
+Load
+Save
 END
 Delete graphite;
-Restock gel 5;
-Sell apple 5;
-Add apple 100;
-BEGIN
-:paste 
-END
-Restock oil 10;
-Add orange 5;
+Sell oil 1;
+Sell orange 1; 
+Restock oil 11;
+Restock oil 11;
+Delete fiction;
+Add orange 11; 
 BEGIN
 :paste
-ADd orange 5;
-BEGIN
-:paste
-END
-Restock oil 1000;
-Add orange 5;
-BEGIN
-:paste
-END
-Restock oil 10;
-Add orange 5;
-BEGIN
-:paste
-END
-Restock 10;
-Add orange 5;
-BEGIN
-:paste
-:paste
-Add oil5;
-Add oil 5
-Check oil
-END
-Restock oil 10;
-Add orange 5;
-BEGIN
-:paste
-END
-Restock oil 10;
-Add orange 5;
-BEGIN
-:paste
-Add oil 5
-Check oil
-END
-Sell oil 2;
-Restock oil 10;
-Add orange 5;
-BEGIN
-:paste
-END
-Sell oil 2;
-Restock oil 10;
-Add orange 5;
-BEGIN
-:paste
-BEGIN
-END
-Sell oil 2;
-Restock oil 10;
-Add orange 5;
-BEGIN
-:paste
-END
-Sell oil 2;
-Restock oil 10;
-Add orange 5;
-BEGIN
-:paste
-END
-Sell oil 2;
-Restock oil 10;
-Add orange 5;
-BEGIN
-:paste
-END
-Sell oil 2;
-Restock oil 10;
-Add orange 5;
-BEGIN
-:paste
-Sell oil 2
-Restock oil 10;
-Add orange 5;
-BEGIN
-:paste
-:pasye
-Restock oil 10
-Add orange 5;
-BEGIN
-:paste
+Save

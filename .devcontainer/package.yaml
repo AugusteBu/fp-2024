@@ -89,8 +89,13 @@ tests:
     dependencies:
     - fp2024
     - tasty
+    - stm
     - tasty-hunit
     - tasty-quickcheck
+    - tasty-quickcheck  
+    - QuickCheck       
+    - tasty-quickcheck
+
   fp2024-doctest:
     main:                Doctest.hs
     source-dirs:         doctest
