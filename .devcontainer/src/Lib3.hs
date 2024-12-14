@@ -138,21 +138,6 @@ isRight _ = False
 
 
 
--- parseBatch :: String -> Either String ([Lib2.Query], String)
--- parseBatch input = 
---     let sanitizedInput = L.strip input
---         queries = splitBySemicolon sanitizedInput
---         parsedResults = map Lib2.parseQuery queries
---     in if all isRight parsedResults 
---        then Right (rights parsedResults, "")
---        else Left "Failed to parse one or more queries in the batch"
-
--- rights :: [Either a b] -> [b]
--- rights = foldr (\x acc -> case x of Right v -> v : acc; _ -> acc) []
-
-
-
-
 -- | Converts program's state into Statements
 -- (probably a batch, but might be a single query)
 -- | Converts program's state into Statements (single or batch query)

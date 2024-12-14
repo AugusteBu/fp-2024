@@ -60,7 +60,7 @@ arbitraryPositiveInt :: Gen Int
 arbitraryPositiveInt = choose (1, 100)
 
 unitTests :: TestTree
-unitTests = testGroup "Lib2 tests"
+unitTests = testGroup "Lib tests"
            [ testCase "Valid Add command" $ 
                 let input = "Add Pencil 10"
                     expected = Right (Lib2.Add "Pencil" 10)
@@ -90,17 +90,17 @@ unitTests = testGroup "Lib2 tests"
                 let input = "Buy Pencil 10"
                     expected = Left "Unrecognized command: Buy"
                 in Lib2.parseQuery input @?= expected
-
+            ,
+             test_fullQueries,
+             test_failingBatch    
             ]
-
 
 --test arbittraty !!
 propertyTests :: TestTree
 propertyTests = testGroup "Property Tests"
   [  testProperty "Adding and restocking an item" prop_addAndRestock
   ,  testProperty "Saving and loading maintains the same state" prop_saveAndLoadState
- -- ,  testProperty "Queries inside BEGIN and END" prop_fullQueries
-
+ 
   ]
 
 prop_addAndRestock :: Property
@@ -134,10 +134,16 @@ prop_addAndRestock = monadicIO $ do
 
 
 --SAVE AND LOAD
-
+applyCommand :: TVar Lib2.State -> Chan Lib3.StorageOp -> Lib2.Query -> IO ()
+applyCommand stateVar ioChan query = 
+    case Lib2.stateTransition (Lib2.emptyState) query of
+        Right (_, updatedState) -> atomically $ writeTVar stateVar updatedState
+        Left err -> putStrLn ("Error applying command: " ++ err)
+        
 prop_saveAndLoadState :: Property
 prop_saveAndLoadState = monadicIO $ do
-    randomStatements <- liftIO $ generate arbitrary 
+
+    randomStatements <- liftIO $ generate arbitrary
 
     stateVar <- liftIO $ newTVarIO Lib2.emptyState
     ioChan <- liftIO $ newChan
@@ -165,52 +171,30 @@ prop_saveAndLoadState = monadicIO $ do
     let serializedSavedState = Lib3.marshallState savedState
     let serializedLoadedState = Lib3.marshallState loadedState
 
+
     Test.QuickCheck.Monadic.assert (serializedSavedState == serializedLoadedState)
 
-applyCommand :: TVar Lib2.State -> Chan Lib3.StorageOp -> Lib2.Query -> IO ()
-applyCommand stateVar ioChan query = do
-    case Lib2.stateTransition (Lib2.emptyState) query of
-        Right (_, updatedState) -> atomically $ writeTVar stateVar updatedState
-        Left err -> putStrLn $ "Error applying command: " ++ err
 
--- prop_fullQueries :: Property
--- prop_fullQueries = monadicIO $ do
---     stateVar <- liftIO $ newTVarIO Lib2.emptyState
---     ioChan <- liftIO $ newChan
---     _ <- liftIO $ forkIO $ Lib3.storageOpLoop ioChan
---     randomStatement <- liftIO $ generate arbitrary
---     let wrappedStatement = "BEGIN\n" ++ show randomStatement ++ "\nEND"
-    
---     case Lib3.parseCommand wrappedStatement of
---         Right (command, _) -> liftIO $ Lib3.stateTransition stateVar command ioChan
---         Left err -> error $ "Error parsing command: " ++ err
 
---     case randomStatement of
---       Lib3.Batch queries -> do
---           mapM_ (\query -> do
---                   let command = Lib3.StorageOp query 
---                   result <- liftIO $ Lib3.stateTransition stateVar command ioChan
---                   case result of
---                       Right (_, newState) -> return ()  
---                       Left err -> error $ "Error applying query: " ++ show err
---               ) queries
---           finalState <- liftIO $ readTVarIO stateVar
---           let expectedState = foldl
---                   (\state query -> 
---                       case Lib2.stateTransition state query of
---                           Right (_, newState) -> newState
---                           Left _ -> state
---                   ) Lib2.emptyState queries
---           Test.QuickCheck.Monadic.assert (finalState == expectedState)
+test_fullQueries :: TestTree
+test_fullQueries = testGroup "Full Queries"
+  [ testCase "Successfully parse batch with valid commands" $ do
+      let fullBatchCommand = "BEGIN\nAdd sharpener 10;\nRestock graphite 10;\nDelete fiction;\nAdd candy 500;\nRestock candy 5;\nSell sharpener 7;\nEND"
+          parsedResult = Lib3.parseStatements fullBatchCommand
+      case parsedResult of
+        Right (statements, _) -> do
+          let expected = "BEGIN\nAdd sharpener 10;\nRestock graphite 10;\nDelete fiction;\nAdd candy 500;\nRestock candy 5;\nSell sharpener 7;\nEND"
+          let rendered = Lib3.renderStatements statements
+          rendered @?= expected
+        Left err -> assertFailure $ "Parsing failed: " ++ err
+  ]
 
---       Lib3.Single query -> do
---           let command = Lib3.StorageOp query 
---           result <- liftIO $ Lib3.stateTransition stateVar command ioChan
---           case result of
---               Right (_, newState) -> do
---                   finalState <- liftIO $ readTVarIO stateVar
---                   let expectedState = case Lib2.stateTransition Lib2.emptyState query of
---                           Right (_, newState') -> newState'
---                           Left _ -> Lib2.emptyState
---                   Test.QuickCheck.Monadic.assert (finalState == expectedState)
---               Left err -> error $ "Error applying query: " ++ show err
+test_failingBatch ::TestTree
+test_failingBatch = testGroup "Full Queries"
+    [ testCase "Failing batch parsing with invalid command" $ do
+         let fullBatchCommand = "BEGIN\nAdd sharpener 10;\nVeryBadCommand VeryInvalidItem NotEvenANumber;\nEND"
+             parsedResult = Lib3.parseStatements fullBatchCommand
+         case parsedResult of
+             Right _ -> assertFailure "Should not happen"
+             Left err -> err @?= "Failed to parse one or more queries: \"Unrecognized command: VeryBadCommand\""
+        ]
